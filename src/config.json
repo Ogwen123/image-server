@@ -1,3 +1,4 @@
 {
-    "imageFolder": "Z:/Code/testing stuff"
+    "imageFolder": "Z:/Code/testing stuff",
+    "port": 5000
 }
