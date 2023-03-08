@@ -1,39 +1,53 @@
 import express from "express"
 import * as dotenv from "dotenv"
 import multer from "multer"
-import { string } from "random-generator.js"
-import fs from "fs"
 dotenv.config({ path: "src/.env" })
 
 import config from "./config.json" assert { type: "json" }
-import { findPath } from "./findPath.js"//gotta use .js so typescript doesn't complain even though it's a .ts file
 import { error } from "./util/error.js"
+
+//route imports
+import { upload } from "./routes/upload/index.js"//gotta use .js so typescript doesn't complain even though it's a .ts file
+import { query } from "./routes/image/query.js"
+import { view } from "./routes/image/view.js"//   ^
+import { all } from "./routes/images/index.js"
+import { filter } from "./routes/images/filter.js"
 
 const app = express()
 
+//get the image via the code
 app.get("/image/*", (req, res) => {
+    const urlOptions = ["query", "view"]
     const urlArray = req.url.split("/")
     //check if the url is in the correct format, if not return an error message
-    if (urlArray.length !== 3) return error(400, "Bad Request", "URL should be in the format /image/{image_code}", res)
-    const path = findPath(urlArray[2])
-
-    let returnObj: { code: number, found: boolean, path?: string } = {//make return object
-        code: (path.found ? 200 : 404),
-        found: path.found
+    if (urlArray.length !== 4) return error(400, "Bad Request", "URL should be in the format /image/view/{image_code} or /image/query/{image_code}", res)
+    if (urlArray[3].length !== 6) return error(400, "Bad Request", "Image code should be 6 characters long", res)
+    if (urlOptions.includes(urlArray[2])) {
+        if (urlArray[2] === "query") {
+            query(req, res)
+        } else if (urlArray[2] === "view") {
+            view(req, res)
+        }
     }
+})
 
-    if (path.found) {//if the path was found then add it to the return object
-        returnObj.path = path.path
-    }
+//get all the images
+app.get("/images", (req, res) => all(req, res))
+app.get("/images/filter", (req, res) => {
+    if (Object.keys(req.query).length === 0) return error(400, "Bad URL", "No query parameters were provided", res)
+    const type = req.query.type || false
+    const date = req.query.date || false
+    const name = req.query.name || false
+    const queryParams = [type, date, name]
 
-    res.status(200)
-    res.json(returnObj)
+    filter(req, res, queryParams)
 })
 
 //handle uploading images
-const storage = multer.diskStorage({
+const storage: multer.StorageEngine = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, config.imageFolder)
+
     },
     filename: (req, file, cb) => {
         //make date
@@ -42,52 +56,13 @@ const storage = multer.diskStorage({
         cb(null, formatted_date + file.originalname)
     }
 })
-const upload = multer({
+
+const multer_upload: multer.Multer = multer({
     dest: config.imageFolder,
     storage: storage
 })
 
-app.post("/upload", upload.single("image"), (req, res) => {
-    if (config.imageFolder === "") return error(500, "Internal Server Error", "The image folder has not been set in the config file", res)
-    if (req.file === undefined) return error(400, "Bad Request", "No file was uploaded", res)
-
-    try {
-        let unique = false
-        let code: string;
-        while (!unique) {
-            code = string(6, { letters: true, case: "both" })
-            const path = findPath(code)
-            if (!path.found) unique = true
-
-        }
-
-        fs.readFile('src/kv.json', 'utf8', function readFileCallback(err, data) {
-            if (err) {
-                throw err
-            } else {
-                let obj = JSON.parse(data); //now it an object
-                const fileData = {
-                    code: code,
-                    fileType: req.file?.mimetype.split("/")[0],
-                    fileName: req.file?.filename,
-                    filePath: req.file?.path
-                }
-                obj.push(fileData); //add some data
-                let json = JSON.stringify(obj); //convert it back to json
-                fs.writeFile('src/kv.json', json, 'utf8', (err) => {
-                    if (err) throw err;
-                }); // write it back 
-            }
-        });
-    } catch {
-        return error(500, "Internal Server Error", "An error occurred while uploading the file", res)
-    }
-    const fileData = { mimetype: req.file.mimetype, destination: req.file.destination, filename: req.file.filename, size: req.file.size }
-    console.table({ file: fileData })
-
-    res.status(200)
-    res.json({ code: 200, success: true, message: "File uploaded" })
-})
+app.post("/upload", multer_upload.single("image"), (req, res) => upload(req, res))
 
 app.listen(config.port, () => {
     console.log(`Server is running on port ${config.port}`)
