@@ -1,17 +1,15 @@
 import express from "express"
-import * as dotenv from "dotenv"
 import multer from "multer"
-dotenv.config({ path: "src/.env" })
 
 import config from "./config.json" assert { type: "json" }
 import { error } from "./util/error.js"
 
 //route imports
 import { upload } from "./routes/upload/index.js"//gotta use .js so typescript doesn't complain even though it's a .ts file
-import { query } from "./routes/image/query.js"
-import { view } from "./routes/image/view.js"//   ^
-import { all } from "./routes/images/index.js"
-import { filter } from "./routes/images/filter.js"
+import { query } from "./routes/image/query.js"//   ^^
+import { view } from "./routes/image/view.js"//     ^^
+import { all } from "./routes/images/index.js"//    ^^
+import { filter } from "./routes/images/filter.js"//^^
 
 const app = express()
 
@@ -21,7 +19,6 @@ app.get("/image/*", (req, res) => {
     const urlArray = req.url.split("/")
     //check if the url is in the correct format, if not return an error message
     if (urlArray.length !== 4) return error(400, "Bad Request", "URL should be in the format /image/view/{image_code} or /image/query/{image_code}", res)
-    if (urlArray[3].length !== 6) return error(400, "Bad Request", "Image code should be 6 characters long", res)
     if (urlOptions.includes(urlArray[2])) {
         if (urlArray[2] === "query") {
             query(req, res)
@@ -31,7 +28,7 @@ app.get("/image/*", (req, res) => {
     }
 })
 
-//get all the images
+//get all the images - return an array of the image's data
 app.get("/images", (req, res) => all(req, res))
 app.get("/images/filter", (req, res) => {
     if (Object.keys(req.query).length === 0) return error(400, "Bad URL", "No query parameters were provided", res)

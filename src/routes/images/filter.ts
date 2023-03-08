@@ -2,7 +2,7 @@ import kv from "../../kv.json" assert { type: "json" }
 import { types } from "../../types.js"
 import { error } from "../../util/error.js"
 
-export function filter(req: Request | any, res: Request | any, filterParams: any[]) {
+export function filter(req: Request | any, res: Request | any, filterParams: any[]) {// should be working :TM:
     const matchingImages: any[] = []
     const images: types.ImageData[] = kv
     let hasReturned = false
