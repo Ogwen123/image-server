@@ -15,7 +15,7 @@ export module types {
         filename: string
     }
 
-    export type ReturnValue = {
+    export type FindImageReturn = {
         found: boolean,
         path?: string,
         data?: ImageData

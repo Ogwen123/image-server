@@ -1,6 +1,4 @@
 # 🖼️ image-server
-An custom server for hosting images. Made to be run on a raspberry pi but i don't see why it would work on everything else.
-
 # Setup
 To use the image server create a json file called ```kv.json``` in the src folder. This is where the key-value pairs for the image will be stored so the code from the url can be converted into a path, then create a ```config.json``` file in the src folder and copy 
 ```json

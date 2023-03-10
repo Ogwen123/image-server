@@ -4,23 +4,36 @@ import fs from "fs"
 dotenv.config({ path: "src/.env" })
 
 import config from "../../config.json" assert { type: "json" }
-import { findPath } from "../../findPath.js"//gotta use .js so typescript doesn't complain even though it's a .ts file
+import { findImageData } from "../../findImageData.js"//gotta use .js so typescript doesn't complain even though it's a .ts file
 import { error } from "../../util/error.js"
+import { types } from "../../types.js"
 
 function makeCode(filename: string) {
     filename = filename.split(".")[0]
     let unique = false
     let code: string;
 
-    if (findPath(filename).found) {
-        while (!unique) {
-            code = string(6, { letters: true, case: "both" })
-            const path = findPath(code)
-            if (!path.found) unique = true
-        }
-    } else {
-        code = filename.split(".")[0]
-    }
+    findImageData(filename).then((result) => {
+        fs.readFile('src/kv.json', 'utf8', (err, data) => {
+            const parsedResult = result as types.FindImageReturn
+            const parsedData = JSON.parse(data) as types.ImageData[]
+            if (parsedResult.found) {
+                code = filename
+                unique = true
+            }
+            const codeArray = []
+            for (const images of parsedData) {
+                codeArray.push(images.code)
+            }
+            while (!unique) {
+                code = string(6, { numbers: false, letters: true, symbols: false, case: "both" })
+                if (!codeArray.includes(code)) {
+                    unique = true
+                }
+
+            }
+        })
+    })
     return code!
 }
 

@@ -1,14 +1,19 @@
-import { findPath } from "../../findPath.js"//gotta use .js so typescript doesn't complain even though it's a .ts file
+import { findImageData } from "../../findImageData.js"//gotta use .js so typescript doesn't complain even though it's a .ts file
 import { types } from "../../types.js"
 import { error } from "../../util/error.js"
 
 export function view(req: Request | any, res: Response | any) {
     const urlArray = req.url.split("/")
-    const imgPath: types.ReturnValue = findPath(urlArray[3])
+    findImageData(urlArray[3]).then((imgPath) => {
 
-    if (!imgPath.found) return error(404, "Not Found", "Image not found", res)
+        const parsedImgPath = imgPath as types.FindImageReturn
 
-    res.status(200)
-    res.set("Content-Type", "image/" + imgPath.data!.fileType)
-    res.sendFile(imgPath.path!)
+        if (!parsedImgPath.found) return error(404, "Not Found", "Image not found", res)
+
+        res.status(200)
+        res.set("Content-Type", "image/" + parsedImgPath.data!.fileType)
+        res.sendFile(parsedImgPath.path!)
+    }).catch((err: string) => {
+        if (err === "404") return error(404, "Not Found", "Image not found", res)
+    })
 }
